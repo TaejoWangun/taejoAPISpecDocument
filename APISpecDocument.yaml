@@ -1,0 +1,2175 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: 미륵관심법 API
+  description: '미륵관심법 데이터베이스설계 - 음성 보안 서비스 API 문서입니다.'
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/KIMKIHANGKIKI/Taejo/1.0.0
+  - description: 로컬서버
+    url: http://localhost:3000
+tags: 
+  - name: auth
+    description: 로그인, 로그아웃, 토큰 리프레시 등
+  - name: users
+    description: 회원가입, 정보 수정, 기기목록, 추가, 업데이트, 제거, 유저별 알림 목록, 제거 등
+  - name: devices
+    description : 기기별 알림 목록, 상세 내역 등
+  - name: notifications
+    description: 소리 알림, 문의 답변 알림, 읽음, 삭제 등
+  - name: admin
+    description: 관리자 페이지. 문의 및 회원 관리.
+  - name: contacts
+    description: 문의 내용
+  - name: websockets
+    description: 감지 모드 중 녹음 상태, 녹음 작동 시간, 알림 카운트를 웹소켓으로 구현
+security: 
+  - {}
+  - JWT: []
+paths:
+  /api/auth/direct:
+    post:
+      tags:
+        - auth
+      summary: 직접가입회원 로그인
+      operationId: directSignIn
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  data:
+                    type: object
+                    allOf:
+                      - $ref: '#/components/schemas/Token'
+        400:
+          description: 이메일 혹은 비밀번호 불일치
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - {}
+  /api/auth/oauth:
+    post:
+      tags:
+        - auth
+      summary: SNS 회원 로그인
+      operationId: oauthSignIn
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oauthType:
+                  type: string
+                  enum: ['google', 'facebook']
+                  description: OAuth 서비스 종류
+                oauthId:
+                  type: string
+                  description: OAuth 인가코드
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  data:
+                    type: object
+                    allOf:
+                      - $ref: '#/components/schemas/Token'
+        400:
+          description: OAuth 인가코드 불일치
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - {}
+  /api/auth/logout:
+    post:
+      tags:
+        - auth
+      summary: 로그아웃
+      operationId: signOut
+      responses:
+        200:
+          description: 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  message:
+                    type: string
+                    default: Logout Success
+                  data:
+                    type: object
+                    default: null
+        401:
+          description: 로그인이 필요함
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        403:
+          description: 잘못된 권한 접근
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+  /api/auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: 토큰 리프레시
+      operationId: refreshToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  format: JWT refresh token
+      responses:
+        200:
+          description: 토큰 리프레시 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  data:
+                    type: object
+                    allOf:
+                      - $ref: '#/components/schemas/Token'
+        401:
+          description: 로그인이 필요함
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        403:
+          description: 잘못된 권한 접근
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+        
+  /api/users:
+    get:
+      tags:
+        - users
+      summary: 내 정보 보기
+      description: >-
+        Muliple tags can be provided with comma separated strings. Use\ \ tag1,
+        tag2, tag3 for testing.
+      operationId: getMyInformation
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+  /api/users/withdrawal:
+    post:
+      tags:
+        - users
+      summary: 회원 탈퇴
+      description: 정말로 탈퇴하겠습니까? 수락 버튼 눌러야 탈퇴 가능
+      operationId: resign
+      requestBody:
+        description: Request body for user withdrawal
+        required: true
+        content:
+          application/json:     
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: 자신의 아이디 입력
+                confirm:
+                  type: boolean
+                  description: 탈퇴 버튼 확인
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  data:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+  /api/users/direct:
+    post:
+      tags:
+        - users
+      summary: 직접회원 가입
+      description: 직접회원 가입하기
+      operationId: directJoin
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        default: 잘못된 아이디입니다.                   
+                      email:
+                        type: string
+                        default: 잘못된 이메일입니다.
+                        format: email
+                      password:
+                        type: string
+                        enum:
+                          - 비밀번호는 n자 이상, n자 이하여야 합니다.
+                          - 비밀번호는 숫자와 영문으로 이루어져야 합니다.
+                        format: password
+
+        '400':
+          description: . . . .Invalid status value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        default: 잘못된 이메일입니다.
+                      password:
+                        type: string
+                        enum:
+                          - 비밀번호는 8자 이상, 20자 이하여야 합니다.
+                          - 비밀번호는 영문, 숫자, 특수문자로 이루어져야 합니다.
+                      name:
+                        type: string
+                        default: 이름은 .
+                      nickName:
+                        type: string
+                        default: 이름은 .
+                      phoneNumber:
+                        type: string
+                        default: 잘못된 이메일입니다.
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - {}
+  /api/users/oauth:
+    post:
+      tags:
+        - users
+      summary: SNS회원 가입
+      description: . . . .Multiple status values can be provided with comma separated strings
+      operationId: snsJoin
+      requestBody:
+        description: OAuth token and provider information
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: ['google', 'facebook']
+                  description: OAuth 제공자(구글, 페이스북)
+                token:
+                  type: string
+                  description: OAuth 토큰
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  data:
+                    type: object
+                    allOf:
+                      - $ref: '#/components/schemas/Token'
+        '400':
+          description: . . . .Invalid status value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - {}
+  /api/users/certification:
+    post:
+      tags:
+        - users
+      summary: 이메일 인증 요청
+      operationId: sendCertificationCode
+      requestBody:
+        description: 이메일 인증 요청
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 인증코드를 받을 이메일 주소
+                  format: email
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                $ref: ''
+        '400':
+          description: . . . .Invalid status value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+    put:
+      tags:
+        - users
+      summary: 이메일 인증코드 검사
+      operationId: verifyCertificationCode
+      requestBody:
+        description: 인증 코드 검사
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 인증 코드 받은 이메일 주소
+                  format: email
+                code:
+                  type: integer
+                  format: int32
+                  description: The 4-digit certification code
+                  example: 1234
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ''
+        '400':
+          description: . . . .Invalid status value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+
+  /api/users/password:
+    put:
+      tags:
+        - users
+      summary: 비밀번호 수정
+      operationId: modifyPassword
+      requestBody:
+        description: Password modification details
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                  description: 현재 비밀번호
+                  format: password
+                newPassword:
+                  type: string
+                  description: 새 비밀번호
+                  format: password
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                $ref: ''
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+  /api/users/reset-password:
+    put:
+      tags:
+        - users
+      summary: 비밀번호 변경
+      operationId: resetPassword
+      requestBody:
+        description: 비밀번호 변경
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  description: 새 비밀번호
+                  format: password
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                $ref: ''
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+
+
+
+
+  /api/devices:
+    get:
+      tags:
+        - devices
+      summary: 기기목록 보기
+      operationId: getAllDevices
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: 디바이스 이름
+                    mode:
+                      type: string
+                      enum: ['detecting', 'alarm']
+                      description: 기기의 현재 모드
+                    activeStatus:
+                      type: boolean
+                      description: 현재 녹음 진행 여부
+                    lastActiveDate:
+                      type: string
+                      format: date-time
+                      description: 마지막으로 녹음 실행됐던 날짜
+                    runningTime:
+                      type: integer
+                      nullable: true
+                      description: 가동 시간
+                    alarmCount:
+                      type: integer
+                      nullable: true
+                      description: 하루 동안 울린 알림 횟수. 하루 지나면 0으로 다시 리셋
+                    meanValue:
+                      type: array
+                      description: 소리 그래프를 이루는 데이터. 하루 지나면 빈 배열로 다시 리셋
+                      items:
+                        type: integer
+                        description: 각 음성 파일마다 각 파일의 상위 5% pcm 데이터의 평균값 하나를 추출
+                        
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+  
+    post:
+      tags:
+        - devices
+      summary: 기기 추가
+      operationId: createDevice
+      requestBody:
+        description: Device to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 디바이스 이름
+                mode:
+                  type: string
+                  enum: ['detecting', 'alarm']
+                  description: 초기 디바이스 모드
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                $ref: ''
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+              
+  /api/devices/{deviceId}:
+    get:
+      tags:
+        - devices
+      summary: 각 기기의 상세 정보 보기. 부분적인 상세 정보만 불러오기 가능하다.
+      operationId: getDeviceById
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fields
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: ['name', 'mode', 'activeStatus', 'lastActiveDate', 'runningTime', 'alarmCount', 'meanValue']
+              description: 선택적으로 받을 수 있는 필드 목록 -> fields=name,mode,activeStatus 이런 식으로
+      responses:
+        '200':
+          description: 아래 나와있는 프로포티를 다 주는 게 아니라 쿼리에서 달라고 요청한 필드만 응답으로 보내준다!
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: 디바이스 이름
+                  mode:
+                    type: string
+                    enum: ['detecting', 'alarm']
+                    description: 기기의 현재 모드
+                  activeStatus:
+                    type: boolean
+                    description: 현재 녹음 진행 여부
+                  lastActiveDate:
+                    type: string
+                    format: date-time
+                    description: 마지막으로 녹음 실행됐던 날짜
+                  runningTime:
+                    type: integer
+                    nullable: true
+                    description: 가동 시간
+                  alarmCount:
+                    type: integer
+                    nullable: true
+                    description: 하루 동안 울린 알림 횟수. 하루 지나면 0으로 다시 리셋
+                  meanValue:
+                    type: array
+                    description: 소리 그래프를 이루는 데이터. 하루 지나면 빈 배열로 다시 리셋
+                    items:
+                      type: integer
+                      description: 각 음성 파일마다 각 파일의 상위 5% pcm 데이터의 평균값 하나를 추출
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+    patch:
+      tags:
+        - devices
+      summary: 기기 업데이트. requestBody 에 있는 프로퍼티 부분적으로 보내도 되게끔 Patch 로 한다.
+      operationId: updateDevice
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false # false로 했으니 원하는 바디만 골라 보낼 수 있다
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 디바이스 이름
+                mode:
+                  type: string
+                  enum: ['detecting', 'alarm']
+                  description: 기기의 현재 모드
+                activeStatus:
+                  type: boolean
+                  description: 현재 녹음 진행 여부
+                lastActiveDate:
+                  type: string
+                  format: date-time
+                  description: 마지막으로 녹음 실행됐던 날짜
+                runningTime:
+                  type: integer
+                  nullable: true
+                  description: 가동 시간
+                alarmCount:
+                  type: integer
+                  nullable: true
+                  description: 하루 동안 울린 알림 횟수. 하루 지나면 0으로 다시 리셋
+                meanValue:
+                  type: array
+                  description: 소리 그래프를 이루는 데이터. 하루 지나면 빈 배열로 다시 리셋
+                  items:
+                    type: integer
+                    description: 각 음성 파일마다 각 파일의 상위 5% pcm 데이터의 평균값 하나를 추출
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                $ref: ''
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/200'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+  /api/devices/delete:
+    post:
+      tags:
+        - devices
+      summary: 기기 삭제
+      operationId: deleteDevices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deleteAll:
+                  type: boolean
+                  description: 모든 기기를 삭제할지 여부
+                deviceIds:
+                  type: array
+                  items:
+                    type: string
+                  description: 삭제할 기기 배열.
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                $ref: ''
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+  /api/devices/{deviceId}/notifications:
+    post:
+      tags:
+        - devices
+      summary: 알림 생성 및 업로드
+      operationId: createNotification
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                wavFile:
+                  type: string
+                  format: binary
+                  description: 업로드할 wav 파일
+              required:
+                - wavFile
+      responses:
+        '200':
+          description: 업로드가 성공적으로 진행되었습니다.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: 'success'
+                  url:
+                    type: string
+                    example: 'https://example.com/path/to/wavfile.wav'
+                  message:
+                    type: string
+                    example: 'File uploaded successfully.'
+
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+
+
+
+
+  /api/notifications:
+    get:
+      tags:
+        - notifications
+      summary: 유저의 모든 노티 목록
+      operationId: getAllUserNotifications
+      responses:
+        '200':
+          description: . . . .successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    notificationId:
+                      type: string
+                    readStatus:
+                      type: boolean
+                    timestamp:
+                      type: string
+                    deviceId:
+                      type: string
+                    wavURL:
+                      type: string
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+  /api/notifications/delete:
+    post:
+      tags:
+        - notifications
+      summary: 알림 삭제하기
+      operationId: deleteNotifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deleteAll:
+                  type: boolean
+                  description: 모든 알림을 삭제할지 여부
+                notificationIds:
+                  type: array
+                  description: 특정 알림들만 삭제할 경우 해당 알림의 ID 목록
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: . . . . 성공적인 작업
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+        
+  /api/notifications/{notificationId}/retrieveSoundFile:
+    get:
+      tags:
+        - notifications
+      summary: 특정 알림의 소리 파일을 가져오기. 재생하고 정지는 클라이언트단에서 진행됩니다.
+      operationId: retrieveSoundFile
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: . . . . 성공적인 작업
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []                
+        
+
+
+
+
+
+
+  /api/admin/contacts:
+    get:
+      tags:
+        - admin
+      summary: 모든 회원 및 비회원 문의사항 검색
+      operationId: getContacts
+      parameters:
+        - name: categories
+          in: query
+          description: 카테고리로 문의사항을 필터링합니다.
+          required: false
+          schema:
+            type: string
+            enum:
+              - General
+              - TechnicalSupport
+              - Complaints
+              - Other
+        - name: email
+          in: query
+          description: 이메일로 문의사항을 필터링합니다.
+          required: false
+          schema:
+            type: string
+            format: email
+        - name: userId
+          in: query
+          description: 사용자 ID로 문의사항을 필터링합니다.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 문의사항을 성공적으로 검색했습니다.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                    userId:
+                      type: string
+                    name:
+                      type: string
+                    categories:
+                      type: string
+                      enum:
+                        - General
+                        - TechnicalSupport
+                        - Complaints
+                        - Other
+                    content:
+                      type: string
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+  /api/admin/contacts/{inquiryId}:
+    get:
+      tags:
+        - admin
+      summary: 특정 문의의 상세 정보 검색
+      operationId: getContactById
+      parameters:
+        - name: inquiryId
+          in: path
+          description: 조회할 문의의 고유 ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 문의의 상세 정보를 성공적으로 검색했습니다.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inquiryId:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  userId:
+                    type: string
+                  name:
+                    type: string
+                  categories:
+                    type: string
+                    enum:
+                      - General
+                      - TechnicalSupport
+                      - Complaints
+                      - Other
+                  content:
+                    type: string
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+    post:
+      tags:
+        - admin
+      summary: 특정 문의에 답변하기
+      operationId: replyToInquiry
+      parameters:
+        - name: inquiryId
+          in: path
+          description: 답변할 문의의 고유 ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - Pending
+                    - Resolved
+                    - Closed
+                  default: Pending
+                replyContent:
+                  type: string
+                  description: 답변의 내용
+              required:
+                - replyContent
+      responses:
+        '200':
+          description: 답변이 성공적으로 전송되었습니다.
+          content:
+            application/json:
+              schema:
+                $ref: ''
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+        
+    put:
+      tags:
+        - admin
+      summary: 문의 상태 업데이트하기
+      operationId: updateInquiryStatus
+      parameters:
+        - name: inquiryId
+          in: path
+          description: 상태를 업데이트할 문의의 고유 ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - Pending
+                    - Resolved
+                    - Closed
+              required:
+                - status
+      responses:
+        '200':
+          description: 문의 상태가 성공적으로 업데이트되었습니다.
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+        
+  /api/admin/contacts/delete:
+    post:
+      tags:
+        - admin
+      summary: 문의 하나 또는 여러 개, 또는 모두 삭제하기
+      operationId: batchDeleteInquiries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deleteAll:
+                  type: boolean
+                  description: 모든 알림을 삭제할지 여부
+                inquiryIds:
+                  type: array
+                  items:
+                    type: string
+                  description: 삭제할 문의의 고유 ID 목록. 
+              required:
+                - inquiryIds
+                - deleteAll
+      responses:
+        '200':
+          description: 문의(들)이 성공적으로 삭제되었습니다.
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - JWT: []
+
+
+
+
+
+
+        
+
+  /api/contacts:
+    post:
+      tags:
+        - contacts
+      summary: 회원/비회원 문의하기
+      operationId: contact
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              oneOf:
+                - properties:
+                    email:
+                      type: string
+                      format: email
+                    name:
+                      type: string
+                      format: name
+                    categories:
+                      type: string
+                      enum:
+                        - General
+                        - TechnicalSupport
+                        - Complaints
+                        - Other
+                    content:
+                      type: string
+                    status:
+                      type: string
+                      enum:
+                        - Pending
+                        - Resolved
+                        - Closed
+                      default: Pending
+                  required:
+                    - email
+                    - name
+                    - categories
+                    - content
+                - properties:
+                    email:
+                      type: string
+                      format: email
+                    userId:
+                      type: string
+                    categories:
+                      type: string
+                      enum:
+                        - General
+                        - TechnicalSupport
+                        - Complaints
+                        - Other
+                    content:
+                      type: string
+                    status:
+                      type: string
+                      enum:
+                        - Pending
+                        - Resolved
+                        - Closed
+                      default: Pending
+                  required:
+                    - email
+                    - userId
+                    - categories
+                    - content
+                  
+      responses:
+        '201':
+          description: 문의가 성공적으로 생성되었습니다.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inquiryId:
+                    type: string
+                    description: 생성된 문의의 고유 ID
+        '400':
+          description: . . . .Invalid ID supplied
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/400'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '401':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/401'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+        '403':
+          description: . . . .Invalid tag value
+          content:
+            application/json:
+              schema:
+                type: object
+                allOf:
+                  - $ref: '#/components/schemas/403'
+                properties:
+                  debugMessage:
+                    type: object
+                    default: null
+      security:
+        - {}
+        - JWT: []
+
+  /ws/devices/{deviceId}:
+    get:  # WebSocket 연결은 HTTP GET으로 시작됩니다.
+      tags:
+        - WebSocket
+      summary: 특정 장치에 대한 WebSocket 연결 초기화
+      operationId: initDeviceWebSocket
+      parameters:
+        - name: deviceId
+          in: path
+          description: WebSocket 연결을 초기화할 장치 ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '101':
+          description: WebSocket 업그레이드가 성공적으로 완료되어 연결이 열림
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceWebSocketMessage'
+        '400':
+          description: 유효하지 않은 요청, WebSocket 연결을 열지 못함
+        '401':
+          description: 인증되지 않은 상태로 WebSocket 연결을 열지 못함
+      security:
+        - JWT: []
+
+components:
+  schemas:
+    DeviceWebSocketMessage:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - updateActiveStatus
+            - updateLastActiveDate
+            - updateRunningTime
+            - updateAlarmCount
+            - updateMeanValue
+        payload:
+          type: object
+          properties:
+            activeStatus:
+              type: boolean
+            lastActiveDate:
+              type: string
+              format: date-time
+            runningTime:
+              type: integer
+            alarmCount:
+              type: integer
+            meanValue:
+              type: number
+      required:
+        - action
+        - payload
+    SuccessResponseDto:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+
+    DeviceStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        recordingTime:
+          type: string
+        alarmCount:
+          type: integer
+    Token:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          format: JWT
+        refreshToken:
+          type: string
+          format: JWT
+    User:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+        oauth:
+          type: object
+          description: . . .
+          $ref: ''
+        
+
+    200:
+      description: 200 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 200 OK
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: SUCCESS
+    400:
+      description: 400 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 400 Bad Request
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: INVALID PARAMETER
+    401:
+      description: 401 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 401 Unauthorized
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: AUTHORIZATION REQUIRED
+    403:
+      description: 403 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 403 Forbidden
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: NO ACCESS AUTHORITY
+    404:
+      description: 404 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 404 Not Found
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: NO RESOURCE FOUND
+    405:
+      description: 405 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 405 Method Not Allowed
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: METHOD NOT ALLOWED
+    500:
+      description: 500 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 500 Internal Server Error
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: SERVER ERROR
+  responses:
+    200:
+      description: 200 응답 공통 스키마
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                default: 200 OK
+              timestamp:
+                type: string
+                format: date-time
+              message:
+                type: string
+                default: SUCCESS
+
+  securitySchemes:
+    JWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
