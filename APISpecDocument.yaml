@@ -2,20 +2,19 @@ openapi: 3.0.0
 info:
   version: 1.0.0
   title: 미륵관심법 API
-  description: '미륵관심법 데이터베이스설계 - 음성 보안 서비스 API 문서입니다.'
+  description: 미륵관심법 데이터베이스설계 - 음성 보안 서비스 API 문서입니다.
 servers:
-  # Added by API Auto Mocking Plugin
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/KIMKIHANGKIKI/Taejo/1.0.0
   - description: 로컬서버
     url: http://localhost:3000
-tags: 
+tags:
   - name: auth
     description: 로그인, 로그아웃, 토큰 리프레시 등
   - name: users
     description: 회원가입, 정보 수정, 기기목록, 추가, 업데이트, 제거, 유저별 알림 목록, 제거 등
   - name: devices
-    description : 기기별 알림 목록, 상세 내역 등
+    description: 기기별 알림 목록, 상세 내역 등
   - name: notifications
     description: 소리 알림, 문의 답변 알림, 읽음, 삭제 등
   - name: admin
@@ -24,11 +23,11 @@ tags:
     description: 문의 내용
   - name: websockets
     description: 감지 모드 중 녹음 상태, 녹음 작동 시간, 알림 카운트를 웹소켓으로 구현
-security: 
+security:
   - {}
   - JWT: []
 paths:
-  /api/auth/direct:
+  /auth/direct:
     post:
       tags:
         - auth
@@ -40,14 +39,14 @@ paths:
             schema:
               type: object
               properties:
-                email:
+                username:
                   type: string
-                  format: email
+                  default: email or userId
                 password:
                   type: string
                   format: password
       responses:
-        200:
+        '200':
           description: ok
           content:
             application/json:
@@ -56,11 +55,38 @@ paths:
                 allOf:
                   - $ref: '#/components/schemas/200'
                 properties:
-                  data:
-                    type: object
-                    allOf:
-                      - $ref: '#/components/schemas/Token'
-        400:
+                  userId:
+                    type: string
+                    example: "hallo51100"
+                  email:
+                    type: string
+                    format: email
+                    example: "me133330@naver.com"
+                  role:
+                    type: string
+                    enum:
+                      - USER
+                    example: "USER"
+                  createdAt:
+                    type: string
+                    format: date-time
+                    example: "2023-10-06T08:15:21.146Z"
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    example: "2023-10-06T08:15:21.146Z"
+                  deletedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI..."
+                  refreshToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI..."
+                    
+        '400':
           description: 이메일 혹은 비밀번호 불일치
           content:
             application/json:
@@ -74,7 +100,7 @@ paths:
                     default: null
       security:
         - {}
-  /api/auth/oauth:
+  /auth/oauth:
     post:
       tags:
         - auth
@@ -88,13 +114,15 @@ paths:
               properties:
                 oauthType:
                   type: string
-                  enum: ['google', 'facebook']
+                  enum:
+                    - google
+                    - facebook
                   description: OAuth 서비스 종류
                 oauthId:
                   type: string
                   description: OAuth 인가코드
       responses:
-        200:
+        '200':
           description: ok
           content:
             application/json:
@@ -107,7 +135,7 @@ paths:
                     type: object
                     allOf:
                       - $ref: '#/components/schemas/Token'
-        400:
+        '400':
           description: OAuth 인가코드 불일치
           content:
             application/json:
@@ -121,55 +149,55 @@ paths:
                     default: null
       security:
         - {}
-  /api/auth/logout:
-    post:
-      tags:
-        - auth
-      summary: 로그아웃
-      operationId: signOut
-      responses:
-        200:
-          description: 로그아웃 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                allOf:
-                  - $ref: '#/components/schemas/200'
-                properties:
-                  message:
-                    type: string
-                    default: Logout Success
-                  data:
-                    type: object
-                    default: null
-        401:
-          description: 로그인이 필요함
-          content:
-            application/json:
-              schema:
-                type: object
-                allOf:
-                  - $ref: '#/components/schemas/401'
-                properties:
-                  debugMessage:
-                    type: object
-                    default: null
-        403:
-          description: 잘못된 권한 접근
-          content:
-            application/json:
-              schema:
-                type: object
-                allOf:
-                  - $ref: '#/components/schemas/403'
-                properties:
-                  debugMessage:
-                    type: object
-                    default: null
-      security:
-        - JWT: []
-  /api/auth/refresh:
+  # /auth/logout:
+  #   post:
+  #     tags:
+  #       - auth
+  #     summary: 로그아웃
+  #     operationId: signOut
+  #     responses:
+  #       '200':
+  #         description: 로그아웃 성공
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               allOf:
+  #                 - $ref: '#/components/schemas/200'
+  #               properties:
+  #                 message:
+  #                   type: string
+  #                   default: Logout Success
+  #                 data:
+  #                   type: object
+  #                   default: null
+  #       '401':
+  #         description: 로그인이 필요함
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               allOf:
+  #                 - $ref: '#/components/schemas/401'
+  #               properties:
+  #                 debugMessage:
+  #                   type: object
+  #                   default: null
+  #       '403':
+  #         description: 잘못된 권한 접근
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               allOf:
+  #                 - $ref: '#/components/schemas/403'
+  #               properties:
+  #                 debugMessage:
+  #                   type: object
+  #                   default: null
+  #     security:
+  #       - JWT: []
+  /auth/refresh:
     post:
       tags:
         - auth
@@ -185,7 +213,7 @@ paths:
                   type: string
                   format: JWT refresh token
       responses:
-        200:
+        '200':
           description: 토큰 리프레시 성공
           content:
             application/json:
@@ -198,7 +226,7 @@ paths:
                     type: object
                     allOf:
                       - $ref: '#/components/schemas/Token'
-        401:
+        '401':
           description: 로그인이 필요함
           content:
             application/json:
@@ -210,7 +238,7 @@ paths:
                   debugMessage:
                     type: object
                     default: null
-        403:
+        '403':
           description: 잘못된 권한 접근
           content:
             application/json:
@@ -224,15 +252,12 @@ paths:
                     default: null
       security:
         - JWT: []
-        
-  /api/users:
+  /users:
     get:
       tags:
         - users
       summary: 내 정보 보기
-      description: >-
-        Muliple tags can be provided with comma separated strings. Use\ \ tag1,
-        tag2, tag3 for testing.
+      description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
       operationId: getMyInformation
       responses:
         '200':
@@ -267,8 +292,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-  /api/users/withdrawal:
+  /users/withdrawal:
     post:
       tags:
         - users
@@ -279,7 +303,7 @@ paths:
         description: Request body for user withdrawal
         required: true
         content:
-          application/json:     
+          application/json:
             schema:
               type: object
               properties:
@@ -328,14 +352,28 @@ paths:
                     default: null
       security:
         - JWT: []
-
-  /api/users/direct:
+  /users/direct:
     post:
       tags:
         - users
       summary: 직접회원 가입
       description: 직접회원 가입하기
       operationId: directJoin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
       responses:
         '200':
           description: . . . .successful operation
@@ -343,26 +381,38 @@ paths:
             application/json:
               schema:
                 type: object
-                allOf:
-                  - $ref: '#/components/schemas/200'
+          #       allOf:
+          #         - $ref: '#/components/schemas/200'
+                # properties:
+                #   data:
+                #     type: object
                 properties:
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        default: 잘못된 아이디입니다.                   
-                      email:
-                        type: string
-                        default: 잘못된 이메일입니다.
-                        format: email
-                      password:
-                        type: string
-                        enum:
-                          - 비밀번호는 n자 이상, n자 이하여야 합니다.
-                          - 비밀번호는 숫자와 영문으로 이루어져야 합니다.
-                        format: password
-
+                  userId:
+                    type: string
+                    default: id
+                  email:
+                    type: string
+                    format: email
+                  # password:
+                  #   type: string
+                  #   # enum:
+                  #   #   - 비밀번호는 n자 이상, n자 이하여야 합니다.
+                  #   #   - 비밀번호는 숫자와 영문으로 이루어져야 합니다.
+                  #   format: password
+                  role:
+                    type: string
+                    default: USER
+                  deletedAt:
+                    type: string
+                    format: date-time
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+                      
+                    
         '400':
           description: . . . .Invalid status value
           content:
@@ -418,7 +468,7 @@ paths:
                     default: null
       security:
         - {}
-  /api/users/oauth:
+  /users/oauth:
     post:
       tags:
         - users
@@ -435,7 +485,9 @@ paths:
               properties:
                 provider:
                   type: string
-                  enum: ['google', 'facebook']
+                  enum:
+                    - google
+                    - facebook
                   description: OAuth 제공자(구글, 페이스북)
                 token:
                   type: string
@@ -492,7 +544,7 @@ paths:
                     default: null
       security:
         - {}
-  /api/users/certification:
+  /users/certification:
     post:
       tags:
         - users
@@ -624,9 +676,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-
-  /api/users/password:
+  /users/password:
     put:
       tags:
         - users
@@ -693,8 +743,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-  /api/users/reset-password:
+  /users/reset-password:
     put:
       tags:
         - users
@@ -757,12 +806,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-
-
-
-
-  /api/devices:
+  /devices:
     get:
       tags:
         - devices
@@ -783,7 +827,9 @@ paths:
                       description: 디바이스 이름
                     mode:
                       type: string
-                      enum: ['detecting', 'alarm']
+                      enum:
+                        - detecting
+                        - alarm
                       description: 기기의 현재 모드
                     activeStatus:
                       type: boolean
@@ -806,7 +852,6 @@ paths:
                       items:
                         type: integer
                         description: 각 음성 파일마다 각 파일의 상위 5% pcm 데이터의 평균값 하나를 추출
-                        
         '400':
           description: . . . .Invalid ID supplied
           content:
@@ -845,7 +890,6 @@ paths:
                     default: null
       security:
         - JWT: []
-  
     post:
       tags:
         - devices
@@ -864,7 +908,9 @@ paths:
                   description: 디바이스 이름
                 mode:
                   type: string
-                  enum: ['detecting', 'alarm']
+                  enum:
+                    - detecting
+                    - alarm
                   description: 초기 디바이스 모드
       responses:
         '200':
@@ -911,9 +957,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-              
-  /api/devices/{deviceId}:
+  /devices/{deviceId}:
     get:
       tags:
         - devices
@@ -932,7 +976,14 @@ paths:
             type: array
             items:
               type: string
-              enum: ['name', 'mode', 'activeStatus', 'lastActiveDate', 'runningTime', 'alarmCount', 'meanValue']
+              enum:
+                - name
+                - mode
+                - activeStatus
+                - lastActiveDate
+                - runningTime
+                - alarmCount
+                - meanValue
               description: 선택적으로 받을 수 있는 필드 목록 -> fields=name,mode,activeStatus 이런 식으로
       responses:
         '200':
@@ -947,7 +998,9 @@ paths:
                     description: 디바이스 이름
                   mode:
                     type: string
-                    enum: ['detecting', 'alarm']
+                    enum:
+                      - detecting
+                      - alarm
                     description: 기기의 현재 모드
                   activeStatus:
                     type: boolean
@@ -1020,7 +1073,7 @@ paths:
           schema:
             type: string
       requestBody:
-        required: false # false로 했으니 원하는 바디만 골라 보낼 수 있다
+        required: false
         content:
           application/json:
             schema:
@@ -1031,7 +1084,9 @@ paths:
                   description: 디바이스 이름
                 mode:
                   type: string
-                  enum: ['detecting', 'alarm']
+                  enum:
+                    - detecting
+                    - alarm
                   description: 기기의 현재 모드
                 activeStatus:
                   type: boolean
@@ -1099,7 +1154,7 @@ paths:
                     default: null
       security:
         - JWT: []
-  /api/devices/delete:
+  /devices/delete:
     post:
       tags:
         - devices
@@ -1165,8 +1220,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-  /api/devices/{deviceId}/notifications:
+  /devices/{deviceId}/notifications:
     post:
       tags:
         - devices
@@ -1201,14 +1255,13 @@ paths:
                 properties:
                   status:
                     type: string
-                    example: 'success'
+                    example: success
                   url:
                     type: string
-                    example: 'https://example.com/path/to/wavfile.wav'
+                    example: https://example.com/path/to/wavfile.wav
                   message:
                     type: string
-                    example: 'File uploaded successfully.'
-
+                    example: File uploaded successfully.
         '400':
           description: . . . .Invalid ID supplied
           content:
@@ -1247,12 +1300,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-
-
-
-
-  /api/notifications:
+  /notifications:
     get:
       tags:
         - notifications
@@ -1316,8 +1364,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-  /api/notifications/delete:
+  /notifications/delete:
     post:
       tags:
         - notifications
@@ -1388,8 +1435,7 @@ paths:
                     default: null
       security:
         - JWT: []
-        
-  /api/notifications/{notificationId}/retrieveSoundFile:
+  /notifications/{notificationId}/retrieveSoundFile:
     get:
       tags:
         - notifications
@@ -1446,15 +1492,8 @@ paths:
                     type: object
                     default: null
       security:
-        - JWT: []                
-        
-
-
-
-
-
-
-  /api/admin/contacts:
+        - JWT: []
+  /admin/contacts:
     get:
       tags:
         - admin
@@ -1549,8 +1588,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-  /api/admin/contacts/{inquiryId}:
+  /admin/contacts/{inquiryId}:
     get:
       tags:
         - admin
@@ -1702,7 +1740,6 @@ paths:
                     default: null
       security:
         - JWT: []
-        
     put:
       tags:
         - admin
@@ -1770,8 +1807,7 @@ paths:
                     default: null
       security:
         - JWT: []
-        
-  /api/admin/contacts/delete:
+  /admin/contacts/delete:
     post:
       tags:
         - admin
@@ -1790,7 +1826,7 @@ paths:
                   type: array
                   items:
                     type: string
-                  description: 삭제할 문의의 고유 ID 목록. 
+                  description: 삭제할 문의의 고유 ID 목록.
               required:
                 - inquiryIds
                 - deleteAll
@@ -1835,15 +1871,7 @@ paths:
                     default: null
       security:
         - JWT: []
-
-
-
-
-
-
-        
-
-  /api/contacts:
+  /contacts:
     post:
       tags:
         - contacts
@@ -1910,7 +1938,6 @@ paths:
                     - userId
                     - categories
                     - content
-                  
       responses:
         '201':
           description: 문의가 성공적으로 생성되었습니다.
@@ -1961,9 +1988,8 @@ paths:
       security:
         - {}
         - JWT: []
-
   /ws/devices/{deviceId}:
-    get:  # WebSocket 연결은 HTTP GET으로 시작됩니다.
+    get:
       tags:
         - WebSocket
       summary: 특정 장치에 대한 WebSocket 연결 초기화
@@ -1988,9 +2014,99 @@ paths:
           description: 인증되지 않은 상태로 WebSocket 연결을 열지 못함
       security:
         - JWT: []
-
 components:
   schemas:
+    '200':
+      description: 200 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 200 OK
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: SUCCESS
+    '400':
+      description: 400 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 400 Bad Request
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: INVALID PARAMETER
+    '401':
+      description: 401 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 401 Unauthorized
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: AUTHORIZATION REQUIRED
+    '403':
+      description: 403 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 403 Forbidden
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: NO ACCESS AUTHORITY
+    '404':
+      description: 404 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 404 Not Found
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: NO RESOURCE FOUND
+    '405':
+      description: 405 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 405 Method Not Allowed
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: METHOD NOT ALLOWED
+    '500':
+      description: 500 응답 공통 스키마
+      type: object
+      properties:
+        status:
+          type: string
+          default: 500 Internal Server Error
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          default: SERVER ERROR
     DeviceWebSocketMessage:
       type: object
       properties:
@@ -2024,8 +2140,6 @@ components:
       properties:
         success:
           type: boolean
-
-
     DeviceStatus:
       type: object
       properties:
@@ -2057,101 +2171,8 @@ components:
           type: object
           description: . . .
           $ref: ''
-        
-
-    200:
-      description: 200 응답 공통 스키마
-      type: object
-      properties:
-        status:
-          type: string
-          default: 200 OK
-        timestamp:
-          type: string
-          format: date-time
-        message:
-          type: string
-          default: SUCCESS
-    400:
-      description: 400 응답 공통 스키마
-      type: object
-      properties:
-        status:
-          type: string
-          default: 400 Bad Request
-        timestamp:
-          type: string
-          format: date-time
-        message:
-          type: string
-          default: INVALID PARAMETER
-    401:
-      description: 401 응답 공통 스키마
-      type: object
-      properties:
-        status:
-          type: string
-          default: 401 Unauthorized
-        timestamp:
-          type: string
-          format: date-time
-        message:
-          type: string
-          default: AUTHORIZATION REQUIRED
-    403:
-      description: 403 응답 공통 스키마
-      type: object
-      properties:
-        status:
-          type: string
-          default: 403 Forbidden
-        timestamp:
-          type: string
-          format: date-time
-        message:
-          type: string
-          default: NO ACCESS AUTHORITY
-    404:
-      description: 404 응답 공통 스키마
-      type: object
-      properties:
-        status:
-          type: string
-          default: 404 Not Found
-        timestamp:
-          type: string
-          format: date-time
-        message:
-          type: string
-          default: NO RESOURCE FOUND
-    405:
-      description: 405 응답 공통 스키마
-      type: object
-      properties:
-        status:
-          type: string
-          default: 405 Method Not Allowed
-        timestamp:
-          type: string
-          format: date-time
-        message:
-          type: string
-          default: METHOD NOT ALLOWED
-    500:
-      description: 500 응답 공통 스키마
-      type: object
-      properties:
-        status:
-          type: string
-          default: 500 Internal Server Error
-        timestamp:
-          type: string
-          format: date-time
-        message:
-          type: string
-          default: SERVER ERROR
   responses:
-    200:
+    '200':
       description: 200 응답 공통 스키마
       content:
         application/json:
@@ -2167,7 +2188,6 @@ components:
               message:
                 type: string
                 default: SUCCESS
-
   securitySchemes:
     JWT:
       type: http
